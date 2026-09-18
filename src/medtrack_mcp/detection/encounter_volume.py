@@ -15,6 +15,7 @@ MONTHLY_CHANGE_THRESHOLD = 50.0
 
 
 def get_monthly_encounter_volume():
+
     query = text("""
         SELECT
             DATE_TRUNC('month', start_time) AS month,
@@ -50,6 +51,7 @@ def get_monthly_encounter_volume():
 
 
 def calculate_baseline(df):
+
     baseline = df[
         (df["month"] >= pd.Timestamp(BASELINE_START))
         & (df["month"] < pd.Timestamp(BASELINE_END))
@@ -58,23 +60,19 @@ def calculate_baseline(df):
     if baseline.empty:
         raise RuntimeError("No baseline encounter data found.")
 
-    counts = baseline["encounter_count"]
-
-    return {
-        "mean": counts.mean(),
-        "std": counts.std()
-    }
+    return baseline["encounter_count"].mean()
 
 
 def detect_anomalies(df):
-    baseline = calculate_baseline(df)
+
+    baseline_mean = calculate_baseline(df)
 
     detection = df[
         (df["month"] >= pd.Timestamp(DETECTION_START))
         & (df["month"] < pd.Timestamp(DETECTION_END))
     ].copy()
 
-    detection["baseline_mean"] = baseline["mean"]
+    detection["baseline_mean"] = baseline_mean
 
     detection["pct_deviation"] = (
         (
@@ -115,11 +113,26 @@ def detect_anomalies(df):
         if not reasons:
             continue
 
+        period_start = row["month"]
+        period_end = period_start + pd.DateOffset(months=1)
+
         anomaly_events.append(
             {
+                "anomaly_type": "encounter_volume",
                 "metric": "monthly_encounter_volume",
-                "period": row["month"].strftime("%Y-%m"),
-                "observed_value": int(row["encounter_count"]),
+
+                "period_start": period_start.strftime(
+                    "%Y-%m-%d"
+                ),
+                "period_end": period_end.strftime(
+                    "%Y-%m-%d"
+                ),
+
+                "period": period_start.strftime("%Y-%m"),
+
+                "observed_value": int(
+                    row["encounter_count"]
+                ),
                 "baseline_value": round(
                     row["baseline_mean"],
                     2
@@ -133,6 +146,7 @@ def detect_anomalies(df):
                     if pd.isna(row["pct_change"])
                     else round(row["pct_change"], 2)
                 ),
+
                 "reasons": reasons,
                 "status": "requires_investigation"
             }
@@ -175,7 +189,7 @@ def run_detection():
     for event in anomaly_events:
 
         print(
-            f"\nALERT: Encounter volume anomaly detected"
+            "\nALERT: Encounter volume anomaly detected"
         )
 
         print(
