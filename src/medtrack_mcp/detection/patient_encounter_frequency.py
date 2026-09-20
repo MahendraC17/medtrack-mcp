@@ -78,7 +78,7 @@ def calculate_patient_baselines(df):
     )
 
 
-def detect_anomalies(df):
+def detect_patient_encounter_frequency_anomalies(df):
     baseline = calculate_patient_baselines(df)
 
     detection_df = df[
@@ -202,5 +202,5 @@ def print_detection(events):
 
 if __name__ == "__main__":
     df = get_monthly_patient_encounters()
-    events = detect_anomalies(df)
+    events = detect_patient_encounter_frequency_anomalies(df)
     print_detection(events)

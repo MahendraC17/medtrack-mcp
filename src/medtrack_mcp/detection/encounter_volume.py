@@ -63,7 +63,7 @@ def calculate_baseline(df):
     return baseline["encounter_count"].mean()
 
 
-def detect_anomalies(df):
+def detect_encounter_volume_anomalies(df):
 
     baseline_mean = calculate_baseline(df)
 
@@ -159,7 +159,7 @@ def run_detection():
 
     df = get_monthly_encounter_volume()
 
-    anomaly_events = detect_anomalies(df)
+    anomaly_events = detect_encounter_volume_anomalies(df)
 
     print("\n" + "=" * 60)
     print("ENCOUNTER VOLUME DETECTION")
