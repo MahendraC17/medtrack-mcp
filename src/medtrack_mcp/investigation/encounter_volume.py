@@ -3,7 +3,7 @@ from sqlalchemy import text
 
 from medtrack_mcp.database.connection import engine
 from medtrack_mcp.detection.encounter_volume import (
-    detect_anomalies,
+    detect_encounter_volume_anomalies,
     get_monthly_encounter_volume,
 )
 
@@ -472,7 +472,7 @@ if __name__ == "__main__":
 
     detection_df = get_monthly_encounter_volume()
 
-    anomaly_events = detect_anomalies(
+    anomaly_events = detect_encounter_volume_anomalies(
         detection_df
     )
 

@@ -490,12 +490,12 @@ def print_investigation(result):
 
 if __name__ == "__main__":
     from medtrack_mcp.detection.patient_encounter_frequency import (
-        detect_anomalies,
+        detect_patient_encounter_frequency_anomalies,
         get_monthly_patient_encounters,
     )
 
     df = get_monthly_patient_encounters()
-    events = detect_anomalies(df)
+    events = detect_patient_encounter_frequency_anomalies(df)
 
     for event in events:
         result = investigate_patient_encounter_frequency(
