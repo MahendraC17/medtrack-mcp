@@ -2,3 +2,7 @@
 __pycache__/
 .env
 data/source/synthea/
+analyze_encounter_volume.py
+data/encounter_analysis_output.txt
+data/encounter_volume_analysis.txt
+src/medtrack_mcp/detection/analyze_mt002.py
