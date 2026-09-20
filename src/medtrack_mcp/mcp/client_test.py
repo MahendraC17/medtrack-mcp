@@ -35,6 +35,7 @@ async def main():
             for tool in tools.tools:
                 print(tool.name)
 
+            # MT 001
             result = await session.call_tool(
                 "detect_encounter_volume_anomalies_tool",
                 {},
@@ -44,21 +45,51 @@ async def main():
             print("-" * 60)
             print(result)
 
-            anomaly_event = json.loads(
-                result.content[0].text
-            )
-            # anomaly = result.content[0].text
+            anomaly_events = [
+                json.loads(content.text)
+                for content in result.content
+            ]
 
-            investigation_result = await session.call_tool(
-                "investigate_encounter_volume_tool",
-                {
-                    "anomaly_event": anomaly_event
-                },
+            for anomaly_event in anomaly_events:
+
+                investigation_result = await session.call_tool(
+                    "investigate_encounter_volume_tool",
+                    {
+                        "anomaly_event": anomaly_event
+                    },
+                )
+
+                print("\nMT-001 INVESTIGATION RESULT")
+                print("-" * 60)
+                print(investigation_result)
+
+            # MT 002
+            result = await session.call_tool(
+                "detect_patient_encounter_frequency_anomalies_tool",
+                {},
             )
 
-            print("\nINVESTIGATION RESULT")
+            print("\nMT-002 DETECTION RESULT")
             print("-" * 60)
-            print(investigation_result)
+            print(result)
+
+            anomaly_events = [
+                json.loads(content.text)
+                for content in result.content
+            ]
+
+            for anomaly_event in anomaly_events:
+
+                investigation_result = await session.call_tool(
+                    "investigate_patient_encounter_frequency_tool",
+                    {
+                        "anomaly_event": anomaly_event
+                    },
+                )
+
+                print("\nMT-002 INVESTIGATION RESULT")
+                print("-" * 60)
+                print(investigation_result)
 
 
 if __name__ == "__main__":
