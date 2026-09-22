@@ -55,7 +55,13 @@ async def main():
                 investigation_result = await session.call_tool(
                     "investigate_encounter_volume_tool",
                     {
-                        "anomaly_event": anomaly_event
+                        "request": {
+                            "anomaly_type": anomaly_event["anomaly_type"],
+                            "metric": anomaly_event["metric"],
+                            "period_start": anomaly_event["period_start"],
+                            "period_end": anomaly_event["period_end"],
+                            "period": anomaly_event["period"],
+                        }
                     },
                 )
 
@@ -83,13 +89,26 @@ async def main():
                 investigation_result = await session.call_tool(
                     "investigate_patient_encounter_frequency_tool",
                     {
-                        "anomaly_event": anomaly_event
+                        "request": {
+                            "anomaly_type": anomaly_event["anomaly_type"],
+                            "metric": anomaly_event["metric"],
+                            "patient_id": anomaly_event["patient_id"],
+                            "period_start": anomaly_event["period_start"],
+                            "period_end": anomaly_event["period_end"],
+                            "period": anomaly_event["period"],
+                            "observed_value": anomaly_event["observed_value"],
+
+                        }
                     },
                 )
 
                 print("\nMT-002 INVESTIGATION RESULT")
                 print("-" * 60)
                 print(investigation_result)
+
+            for item in result.content:
+                print("\nCONTENT:")
+                print(item)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,11 @@ from medtrack_mcp.mcp.tools import (
     investigate_detected_patient_encounter_frequency,
 )
 
+from medtrack_mcp.mcp.schemas import (
+    EncounterVolumeInvestigationRequest,
+    PatientEncounterFrequencyInvestigationRequest,
+)
+
 
 mcp = MCPServer("MedTrack")
 
@@ -21,12 +26,12 @@ def detect_encounter_volume_anomalies_tool():
 
 
 @mcp.tool()
-def investigate_encounter_volume_tool(anomaly_event):
+def investigate_encounter_volume_tool(request: EncounterVolumeInvestigationRequest):
     """
     Investigate a detected encounter volume anomaly.
     """
 
-    return investigate_detected_encounter_volume(anomaly_event)
+    return investigate_detected_encounter_volume(request.model_dump())
 
 @mcp.tool()
 def detect_patient_encounter_frequency_anomalies_tool():
@@ -38,12 +43,12 @@ def detect_patient_encounter_frequency_anomalies_tool():
 
 
 @mcp.tool()
-def investigate_patient_encounter_frequency_tool(anomaly_event):
+def investigate_patient_encounter_frequency_tool(request: PatientEncounterFrequencyInvestigationRequest):
     """
     Investigate a detected patient encounter frequency anomaly.
     """
 
-    return investigate_detected_patient_encounter_frequency(anomaly_event)
+    return investigate_detected_patient_encounter_frequency(request.model_dump())
 
 if __name__ == "__main__":
     mcp.run()
