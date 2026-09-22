@@ -12,46 +12,61 @@ load_dotenv()
 MODEL = "gpt-4.1-nano-2025-04-14"
 
 SYSTEM_PROMPT = """
-You are a healthcare data investigation agent.
+        You are a healthcare data investigation agent.
 
-Your task is to detect and investigate anomalies in the healthcare
-data using the available MCP tools.
+        Your task is to detect and investigate anomalies in healthcare data
+        using the available MCP tools.
 
-Follow this process:
+        You are an orchestrator. Use the available MCP tools rather than
+        directly accessing the database.
 
-1. Use the detection tool to identify anomalies.
-2. Investigate anomalies whose status requires investigation.
-3. Use the investigation results as evidence.
-4. Provide a concise factual summary of what was detected and what
-   the investigation found.
-5. Do not invent evidence or conclusions that are not supported by
-   the tool results.
+        Follow this process:
 
-You are an orchestrator. Use the available tools rather than directly
-accessing the database.
+        1. Determine which detection tools are relevant to the user's request.
+        2. If the user asks for a general anomaly check, inspect all available
+        detection tools.
+        3. If the user specifies a particular anomaly type, prioritize the
+        detection tools relevant to that anomaly type.
+        4. Use the detection results to identify anomalies.
+        5. Investigate anomalies whose status is "requires_investigation".
+        6. Use investigation results as evidence for the final report.
+        7. After the relevant investigations are complete, provide a concise
+        factual summary of the findings.
 
-When reporting findings:
+        Detection rules:
 
-- Separate observed evidence from interpretation.
-- Only report organizations, encounter types, providers, patients,
-  and numerical values returned by the investigation tool.
-- Do not invent or infer specific organizations or causes.
-- Do not claim to know the cause of an anomaly unless the tool
-  results directly support it.
-- If the evidence establishes that an anomaly exists but not why it
-  occurred, explicitly state that the cause is not established.
+        - Call each relevant detection tool at most once per investigation.
+        - Do not call a detection tool again unless the user explicitly asks
+        for a fresh detection.
+        - Treat returned detection results as the source of truth for which
+        anomalies were detected.
+        - Do not invent anomalies that were not returned by a detection tool.
 
-  Tool-use rules:
+        Investigation rules:
 
-- Call the detection tool once at the beginning of an investigation.
-- Use the returned detection results as the source of truth for which
-  anomalies require investigation.
-- Do not call the detection tool again unless the user explicitly
-  asks for a fresh detection.
-- Investigate each anomaly with status "requires_investigation"
-  at most once.
-- After all relevant anomalies have been investigated, produce the
-  final report.
+        - Investigate each detected anomaly with status
+        "requires_investigation" at most once.
+        - When calling an investigation tool, follow its input schema exactly.
+        - Use values from the detected anomaly when constructing the
+        investigation request.
+        - Do not summarize, abbreviate, or omit fields required by the
+        investigation tool schema.
+        - Do not invent values for required investigation fields.
+
+        Reporting rules:
+
+        - Use investigation results as the primary evidence for findings.
+        - Separate observed evidence from interpretation.
+        - Only report organizations, encounter types, providers, patients,
+        and numerical values returned by the tools.
+        - Do not invent evidence or conclusions.
+        - Do not infer a specific cause unless the tool results directly
+        establish it.
+        - If an anomaly is confirmed but its cause is not established,
+        explicitly state that the cause is not established.
+        - Do not suggest external factors or explanations that were not
+        investigated by the available tools.
+
 """
 
 
@@ -148,12 +163,6 @@ async def run_agent(user_request):
                 mcp_tools.tools
             )
 
-            print("\nAVAILABLE MCP TOOLS")
-            print("-" * 60)
-
-            for tool in tools:
-                print(tool["name"])
-
             response = client.responses.create(
                 model=MODEL,
                 instructions=SYSTEM_PROMPT,
@@ -176,19 +185,31 @@ async def run_agent(user_request):
 
                 for call in function_calls:
 
-                    print(
-                        f"\nAGENT CALLING TOOL: "
-                        f"{call.name}"
-                    )
-
                     arguments = json.loads(
                         call.arguments
                     )
 
-                    result = await session.call_tool(
-                        call.name,
-                        arguments,
-                    )
+                    try:
+                        result = await session.call_tool(
+                            call.name,
+                            arguments,
+                        )
+
+
+                    except Exception as exc:
+                        import traceback
+
+                        print("\nMCP CALL EXCEPTION")
+                        print("-" * 60)
+                        print(f"Tool: {call.name}")
+                        print(f"Arguments: {arguments}")
+                        print(f"Exception: {exc}")
+                        traceback.print_exc()
+
+                        raise
+                    # print("\nRAW TOOL RESULT")
+                    # print("-" * 60)
+                    # print(result)
 
                     tool_result = extract_tool_result(
                         result
@@ -217,10 +238,8 @@ async def run_agent(user_request):
 async def main():
 
     request = (
-        "Check the healthcare data for unusual encounter "
-        "volume activity. Investigate any anomalies that "
-        "require investigation and explain what you find."
-    )
+        "Check the healthcare data for all anomalies and investigate the"
+        "anomalies that require investigation.")
 
     result = await run_agent(request)
 
